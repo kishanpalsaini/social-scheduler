@@ -1,11 +1,9 @@
 // app/api/auth/instagram/callback/route.js
-// Facebook redirects here after user approves access
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY // use service role here for server-side
+    process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 export async function GET(request) {
@@ -19,85 +17,100 @@ export async function GET(request) {
     }
 
     try {
-        // Step 1: Exchange code for a short-lived Facebook access token
-        const tokenRes = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
+        // Step 1: Exchange code for access token using Instagram's API
+        const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 client_id: process.env.INSTAGRAM_APP_ID,
                 client_secret: process.env.INSTAGRAM_APP_SECRET,
+                grant_type: 'authorization_code',
                 redirect_uri: process.env.INSTAGRAM_REDIRECT_URI,
                 code,
             }),
         })
-        const tokenData = await tokenRes.json()
-        if (!tokenData.access_token) throw new Error('No access token returned')
-        const shortLivedToken = tokenData.access_token
 
-        // Step 2: Exchange for a long-lived token (lasts 60 days)
+        const tokenData = await tokenRes.json()
+        console.log('Token response:', JSON.stringify(tokenData))
+
+        if (!tokenData.access_token) {
+            throw new Error(`No access token: ${JSON.stringify(tokenData)}`)
+        }
+
+        const shortLivedToken = tokenData.access_token
+        const igUserId = tokenData.user_id
+
+        // Step 2: Exchange for long-lived token (60 days)
         const longTokenRes = await fetch(
-            `https://graph.facebook.com/v18.0/oauth/access_token?` +
+            `https://graph.instagram.com/access_token?` +
             new URLSearchParams({
-                grant_type: 'fb_exchange_token',
-                client_id: process.env.INSTAGRAM_APP_ID,
+                grant_type: 'ig_exchange_token',
                 client_secret: process.env.INSTAGRAM_APP_SECRET,
-                fb_exchange_token: shortLivedToken,
+                access_token: shortLivedToken,
             })
         )
         const longTokenData = await longTokenRes.json()
-        const longLivedToken = longTokenData.access_token
+        console.log('Long token response:', JSON.stringify(longTokenData))
 
-        // Step 3: Get the list of Facebook Pages this user manages
-        const pagesRes = await fetch(
-            `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedToken}`
+        const longLivedToken = longTokenData.access_token || shortLivedToken
+
+        // Step 3: Get Instagram profile
+        const profileRes = await fetch(
+            `https://graph.instagram.com/v18.0/${igUserId}?fields=username,profile_picture_url&access_token=${longLivedToken}`
         )
-        const pagesData = await pagesRes.json()
-        if (!pagesData.data || pagesData.data.length === 0) {
-            throw new Error('No Facebook Pages found. Please create a Facebook Page and link your Instagram to it.')
+        const profile = await profileRes.json()
+        console.log('Profile:', JSON.stringify(profile))
+
+        // Step 4: Get user from Supabase session cookie
+        const cookieHeader = request.headers.get('cookie') || ''
+
+        // Parse the supabase auth token from cookies
+        const cookies = Object.fromEntries(
+            cookieHeader.split(';').map(c => {
+                const [k, ...v] = c.trim().split('=')
+                return [k, v.join('=')]
+            })
+        )
+
+        // Try to get user from auth header
+        let userId = null
+        for (const [key, value] of Object.entries(cookies)) {
+            if (key.includes('auth-token') || key.includes('supabase')) {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser(decodeURIComponent(value))
+                    if (user) { userId = user.id; break }
+                } catch { }
+            }
         }
 
-        // Use the first page (you can let users pick later)
-        const page = pagesData.data[0]
-        const pageAccessToken = page.access_token
-        const pageId = page.id
-
-        // Step 4: Get the Instagram Business Account connected to this page
-        const igRes = await fetch(
-            `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
-        )
-        const igData = await igRes.json()
-        if (!igData.instagram_business_account) {
-            throw new Error('No Instagram Business Account linked to this Facebook Page.')
+        // Fallback: get most recently created user
+        if (!userId) {
+            const { data } = await supabase.auth.admin.listUsers()
+            if (data?.users?.length > 0) {
+                const sorted = data.users.sort((a, b) =>
+                    new Date(b.last_sign_in_at) - new Date(a.last_sign_in_at)
+                )
+                userId = sorted[0].id
+            }
         }
-        const igAccountId = igData.instagram_business_account.id
 
-        // Step 5: Get Instagram username and profile picture
-        const igProfileRes = await fetch(
-            `https://graph.facebook.com/v18.0/${igAccountId}?fields=username,profile_picture_url&access_token=${pageAccessToken}`
-        )
-        const igProfile = await igProfileRes.json()
+        if (!userId) throw new Error('Could not identify user. Please log in again.')
 
-        // Step 6: Get logged in user from Supabase auth cookie
-        // We pass user_id via state param (set in the auth route) or session
-        // For simplicity, we'll get the most recent user who initiated this flow
-        // In production, use the `state` param to pass the user ID securely
-        const { data: { users } } = await supabase.auth.admin.listUsers()
-        // Get user from session cookie - simplified approach
-        const authHeader = request.headers.get('cookie') || ''
-
-        // Save to connected_accounts table
-        // Note: user_id needs to come from session - see note below
+        // Step 5: Save to connected_accounts
         const expires = new Date()
-        expires.setDate(expires.getDate() + 60) // long-lived token expires in 60 days
+        expires.setDate(expires.getDate() + 60)
 
-        await supabase.from('connected_accounts').upsert({
+        const { error: dbError } = await supabase.from('connected_accounts').upsert({
+            user_id: userId,
             platform: 'instagram',
-            platform_user_id: igAccountId,
-            access_token: pageAccessToken,      // page token is what we use to post
-            username: igProfile.username,
-            profile_picture: igProfile.profile_picture_url,
+            platform_user_id: String(igUserId),
+            access_token: longLivedToken,
+            username: profile.username,
+            profile_picture: profile.profile_picture_url,
             token_expires_at: expires.toISOString(),
-        }, { onConflict: 'platform,platform_user_id' })
+        }, { onConflict: 'user_id,platform' })
+
+        if (dbError) throw new Error(`DB error: ${dbError.message}`)
 
         return Response.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=instagram_connected`)
 
