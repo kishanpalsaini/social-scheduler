@@ -471,7 +471,7 @@ export default function Dashboard() {
                                         <div className="connect-status">Not connected</div>
                                     </div>
                                 </div>
-                                <a href="/api/auth/linkedin" className="connect-btn">Connect</a>
+                                <a href={`/api/auth/linkedin?user_id=${user?.id}`} className="connect-btn">Connect</a>
                             </div>
                             <div className="connect-card">
                                 <div className="connect-info">
@@ -481,7 +481,7 @@ export default function Dashboard() {
                                         <div className="connect-status">Not connected</div>
                                     </div>
                                 </div>
-                                <a href="/api/auth/instagram" className="connect-btn">Connect</a>
+                                <a href={`/api/auth/instagram?user_id=${user?.id}`} className="connect-btn">Connect</a>
                             </div>
                         </div>
                     </div>

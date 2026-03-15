@@ -10,14 +10,18 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const error = searchParams.get('error')
+    const userId = searchParams.get('state') // user ID passed via state param
 
     if (error) {
-        console.error('Instagram OAuth error:', error)
         return Response.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=instagram_auth_failed`)
     }
 
+    if (!userId) {
+        return Response.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=No user ID found. Please try again.`)
+    }
+
     try {
-        // Step 1: Exchange code for access token using Instagram's API
+        // Step 1: Exchange code for short-lived token
         const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -50,8 +54,6 @@ export async function GET(request) {
             })
         )
         const longTokenData = await longTokenRes.json()
-        console.log('Long token response:', JSON.stringify(longTokenData))
-
         const longLivedToken = longTokenData.access_token || shortLivedToken
 
         // Step 3: Get Instagram profile
@@ -61,42 +63,7 @@ export async function GET(request) {
         const profile = await profileRes.json()
         console.log('Profile:', JSON.stringify(profile))
 
-        // Step 4: Get user from Supabase session cookie
-        const cookieHeader = request.headers.get('cookie') || ''
-
-        // Parse the supabase auth token from cookies
-        const cookies = Object.fromEntries(
-            cookieHeader.split(';').map(c => {
-                const [k, ...v] = c.trim().split('=')
-                return [k, v.join('=')]
-            })
-        )
-
-        // Try to get user from auth header
-        let userId = null
-        for (const [key, value] of Object.entries(cookies)) {
-            if (key.includes('auth-token') || key.includes('supabase')) {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser(decodeURIComponent(value))
-                    if (user) { userId = user.id; break }
-                } catch { }
-            }
-        }
-
-        // Fallback: get most recently created user
-        if (!userId) {
-            const { data } = await supabase.auth.admin.listUsers()
-            if (data?.users?.length > 0) {
-                const sorted = data.users.sort((a, b) =>
-                    new Date(b.last_sign_in_at) - new Date(a.last_sign_in_at)
-                )
-                userId = sorted[0].id
-            }
-        }
-
-        if (!userId) throw new Error('Could not identify user. Please log in again.')
-
-        // Step 5: Save to connected_accounts
+        // Step 4: Save to connected_accounts using userId from state
         const expires = new Date()
         expires.setDate(expires.getDate() + 60)
 
