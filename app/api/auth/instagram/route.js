@@ -6,11 +6,10 @@ export async function GET() {
         client_id: process.env.INSTAGRAM_APP_ID,
         redirect_uri: process.env.INSTAGRAM_REDIRECT_URI,
         scope: [
-            'instagram_basic',
-            'instagram_content_publish',
-            'instagram_manage_insights',
-            'pages_show_list',
-            'pages_read_engagement',
+            'instagram_business_basic',
+            'instagram_business_content_publish',
+            'instagram_business_manage_messages',
+            'instagram_business_manage_comments',
         ].join(','),
         response_type: 'code',
     })

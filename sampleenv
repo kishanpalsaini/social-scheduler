@@ -4,9 +4,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = sb_publishable_yVC-WLHcDaGBicGG-UrFng_8TIp0nmx
 
 INSTAGRAM_APP_ID=1217374730381319
 INSTAGRAM_APP_SECRET=b2f6c9e7fdba0adc1ab7678f78a3c0fb
-INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/auth/instagram/callback
+INSTAGRAM_REDIRECT_URI=https://social-scheduler-404-kp.vercel.app/api/auth/instagram/callback
 
 
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://social-scheduler-404-kp.vercel.app
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc3B2d2JnbWllYWx6am5namR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjM0MzY2MywiZXhwIjoyMDg3OTE5NjYzfQ.inxKiJ3yuG0zwgkJdpOunKbP8DCZs6KDpB2trqGg6gI
 CRON_SECRET=any-random-string-you-make-up
