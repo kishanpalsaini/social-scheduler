@@ -101,7 +101,7 @@ export default function AppLayout({ children, user }) {
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
           .sidebar { display: none; }
-          .main-content { margin-left: 0; padding: 80px 16px 80px; }
+          .main-content { margin-left: 0; padding: 80px 16px 80px; width: 100%; }
           .mobile-topbar { display: flex; }
           .bottom-nav { display: flex; }
         }
