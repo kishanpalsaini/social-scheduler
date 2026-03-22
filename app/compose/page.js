@@ -48,19 +48,13 @@ export default function Compose() {
 
         try {
             let mediaUrls = []
-
-            // Upload file to Supabase Storage if selected
             if (file) {
                 const ext = file.name.split('.').pop()
                 const path = `${user.id}/${Date.now()}.${ext}`
-                const { data, error } = await supabase.storage
-                    .from('post-media')
-                    .upload(path, file)
+                const { data, error } = await supabase.storage.from('post-media').upload(path, file)
                 if (error) throw error
                 mediaUrls = [data.path]
             }
-
-            // Save post to DB
             const { error } = await supabase.from('posts').insert({
                 user_id: user.id,
                 content,
@@ -70,9 +64,7 @@ export default function Compose() {
                 scheduled_at: status === 'scheduled' && scheduledAt ? scheduledAt : null,
                 status,
             })
-
             if (error) throw error
-
             setMessage({ text: status === 'scheduled' ? '🎉 Post scheduled successfully!' : '✅ Draft saved!', type: 'success' })
             setContent('')
             setFile(null)
@@ -121,6 +113,19 @@ export default function Compose() {
         .logout-btn { width: 100%; padding: 10px; background: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: rgba(255,255,255,0.35); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
         .logout-btn:hover { border-color: rgba(239,68,68,0.4); color: #fca5a5; background: rgba(239,68,68,0.06); }
 
+        /* Mobile topbar */
+        .mobile-topbar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #0a0a0f; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 0 20px; align-items: center; justify-content: space-between; z-index: 200; }
+        .mobile-brand { display: flex; align-items: center; gap: 8px; }
+        .mobile-brand-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #6c63ff, #f97316); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        .mobile-brand-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+
+        /* Bottom nav */
+        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: rgba(10,10,15,0.97); border-top: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); z-index: 200; padding: 0 8px; align-items: center; justify-content: space-around; }
+        .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 16px; border-radius: 10px; text-decoration: none; color: rgba(255,255,255,0.35); }
+        .bottom-nav-item.active { color: #6c63ff; }
+        .bottom-nav-icon { font-size: 20px; }
+        .bottom-nav-label { font-size: 10px; font-weight: 500; }
+
         /* Main */
         .main { margin-left: 240px; padding: 40px 48px; width: 100%; opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
         .main.visible { opacity: 1; transform: translateY(0); }
@@ -131,20 +136,10 @@ export default function Compose() {
 
         .compose-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
 
-        /* Editor card */
         .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 28px; }
         .card-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 20px; color: rgba(255,255,255,0.8); }
 
-        .textarea {
-          width: 100%; min-height: 220px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 14px; padding: 18px;
-          color: #fff; font-size: 15px; line-height: 1.7;
-          font-family: 'DM Sans', sans-serif;
-          resize: vertical; outline: none;
-          transition: border-color 0.2s;
-        }
+        .textarea { width: 100%; min-height: 220px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px; color: #fff; font-size: 15px; line-height: 1.7; font-family: 'DM Sans', sans-serif; resize: vertical; outline: none; transition: border-color 0.2s; }
         .textarea::placeholder { color: rgba(255,255,255,0.2); }
         .textarea:focus { border-color: rgba(108,99,255,0.5); background: rgba(108,99,255,0.04); }
 
@@ -153,14 +148,7 @@ export default function Compose() {
         .char-fill { height: 100%; border-radius: 999px; transition: width 0.2s, background 0.2s; }
         .char-count { font-size: 12px; color: rgba(255,255,255,0.3); }
 
-        /* Media upload */
-        .upload-zone {
-          border: 2px dashed rgba(255,255,255,0.1);
-          border-radius: 14px; padding: 28px;
-          text-align: center; cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
-          margin-bottom: 20px;
-        }
+        .upload-zone { border: 2px dashed rgba(255,255,255,0.1); border-radius: 14px; padding: 28px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 20px; }
         .upload-zone:hover { border-color: rgba(108,99,255,0.4); background: rgba(108,99,255,0.04); }
         .upload-zone.has-file { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.04); padding: 0; overflow: hidden; }
         .upload-icon { font-size: 28px; margin-bottom: 8px; }
@@ -170,13 +158,11 @@ export default function Compose() {
         .remove-file { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; background: rgba(239,68,68,0.1); color: #fca5a5; font-size: 12px; cursor: pointer; border: none; width: 100%; font-family: 'DM Sans', sans-serif; border-radius: 0 0 12px 12px; }
         .remove-file:hover { background: rgba(239,68,68,0.2); }
 
-        /* Post type */
         .type-row { display: flex; gap: 8px; margin-bottom: 0; }
         .type-btn { flex: 1; padding: 9px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; text-align: center; }
         .type-btn.active { background: rgba(108,99,255,0.15); border-color: rgba(108,99,255,0.4); color: #6c63ff; }
         .type-btn:hover:not(.active) { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
 
-        /* Right panel */
         .platform-card { margin-bottom: 16px; }
         .platform-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; transition: all 0.15s; margin-bottom: 8px; }
         .platform-toggle.on { background: rgba(108,99,255,0.08); border-color: rgba(108,99,255,0.3); }
@@ -188,30 +174,39 @@ export default function Compose() {
         .toggle-knob { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
         .toggle-pill.on .toggle-knob { transform: translateX(16px); }
 
-        /* Schedule */
         .schedule-card { margin-bottom: 16px; }
         .field-label { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
         .datetime-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 11px; padding: 12px 14px; color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; colorscheme: dark; }
         .datetime-input:focus { border-color: rgba(108,99,255,0.5); }
 
-        /* Message */
         .msg { padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
         .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
         .msg.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #86efac; }
 
-        /* Action buttons */
         .action-row { display: flex; flex-direction: column; gap: 10px; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.2s, transform 0.15s; }
         .btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-primary { background: linear-gradient(135deg, #6c63ff, #4f46e5); color: #fff; }
         .btn-secondary { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-
         .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 16px 0; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+          .sidebar { display: none; }
+          .mobile-topbar { display: flex; }
+          .bottom-nav { display: flex; }
+          .main { margin-left: 0; padding: 76px 16px 80px; }
+          .page-title { font-size: 22px; }
+          .compose-grid { grid-template-columns: 1fr; }
+          .card { padding: 18px; border-radius: 14px; }
+          .textarea { min-height: 160px; font-size: 14px; }
+          .upload-zone { padding: 20px; }
+        }
       `}</style>
 
             <div className="root">
-                {/* Sidebar */}
+                {/* Desktop Sidebar */}
                 <aside className="sidebar">
                     <div className="brand">
                         <div className="brand-icon">📅</div>
@@ -231,6 +226,15 @@ export default function Compose() {
                         <button className="logout-btn" onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }}>Sign out</button>
                     </div>
                 </aside>
+
+                {/* Mobile Topbar */}
+                <div className="mobile-topbar">
+                    <div className="mobile-brand">
+                        <div className="mobile-brand-icon">📅</div>
+                        <span className="mobile-brand-name">PostPilot</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Create Post</div>
+                </div>
 
                 {/* Main */}
                 <main className={`main ${mounted ? 'visible' : ''}`}>
@@ -257,18 +261,11 @@ export default function Compose() {
                                     </div>
                                     <span className="char-count" style={{ color: charColor }}>{charCount} / {charLimit}</span>
                                 </div>
-
-                                {/* Media upload */}
-                                <div
-                                    className={`upload-zone ${file ? 'has-file' : ''}`}
-                                    onClick={() => !file && fileRef.current.click()}
-                                >
+                                <div className={`upload-zone ${file ? 'has-file' : ''}`} onClick={() => !file && fileRef.current.click()}>
                                     {filePreview ? (
                                         <>
                                             <img src={filePreview} className="preview-img" alt="preview" />
-                                            <button className="remove-file" onClick={e => { e.stopPropagation(); setFile(null); setFilePreview(null) }}>
-                                                ✕ Remove media
-                                            </button>
+                                            <button className="remove-file" onClick={e => { e.stopPropagation(); setFile(null); setFilePreview(null) }}>✕ Remove media</button>
                                         </>
                                     ) : (
                                         <>
@@ -281,7 +278,6 @@ export default function Compose() {
                                 <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileChange} />
                             </div>
 
-                            {/* Post type */}
                             <div className="card">
                                 <div className="card-title">📱 Post Format</div>
                                 <div className="type-row">
@@ -296,7 +292,6 @@ export default function Compose() {
 
                         {/* Right: Settings */}
                         <div>
-                            {/* Platforms */}
                             <div className="card platform-card">
                                 <div className="card-title">🌐 Publish To</div>
                                 {[
@@ -315,7 +310,6 @@ export default function Compose() {
                                 ))}
                             </div>
 
-                            {/* Schedule */}
                             <div className="card schedule-card">
                                 <div className="card-title">⏰ Schedule</div>
                                 <div className="field-label">Publish Date & Time</div>
@@ -331,36 +325,44 @@ export default function Compose() {
                                 </div>
                             </div>
 
-                            {/* Message */}
                             {message.text && <div className={`msg ${message.type}`}>{message.text}</div>}
 
-                            {/* Actions */}
                             <div className="action-row">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => handleSubmit('scheduled')}
-                                    disabled={loading || !scheduledAt}
-                                >
+                                <button className="btn btn-primary" onClick={() => handleSubmit('scheduled')} disabled={loading || !scheduledAt}>
                                     {loading ? 'Saving...' : '🚀 Schedule Post'}
                                 </button>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => handleSubmit('draft')}
-                                    disabled={loading}
-                                >
+                                <button className="btn btn-secondary" onClick={() => handleSubmit('draft')} disabled={loading}>
                                     💾 Save as Draft
                                 </button>
                             </div>
 
                             <div className="divider" />
-
                             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', textAlign: 'center', lineHeight: 1.6 }}>
-                                Posts are published automatically at the scheduled time.
-                                Make sure your accounts are connected.
+                                Posts are published automatically at the scheduled time. Make sure your accounts are connected.
                             </div>
                         </div>
                     </div>
                 </main>
+
+                {/* Mobile Bottom Nav */}
+                <nav className="bottom-nav">
+                    <Link href="/dashboard" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">🏠</span>
+                        <span className="bottom-nav-label">Home</span>
+                    </Link>
+                    <Link href="/compose" className="bottom-nav-item active">
+                        <span className="bottom-nav-icon">✏️</span>
+                        <span className="bottom-nav-label">Create</span>
+                    </Link>
+                    <Link href="/calendar" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">📆</span>
+                        <span className="bottom-nav-label">Calendar</span>
+                    </Link>
+                    <Link href="/dashboard" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">🔗</span>
+                        <span className="bottom-nav-label">Connect</span>
+                    </Link>
+                </nav>
             </div>
         </>
     )

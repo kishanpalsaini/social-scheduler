@@ -8,17 +8,8 @@ export default function Calendar() {
     const [posts, setPosts] = useState([])
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDay, setSelectedDay] = useState(null)
-    // const [mounted, setMounted] = useState(false)
     const [deletingId, setDeletingId] = useState(null)
     const [confirmDelete, setConfirmDelete] = useState(null)
-
-
-    const getUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { window.location.href = '/login'; return }
-        setUser(user)
-        await fetchPosts(user.id)
-    }
 
     const fetchPosts = async (userId) => {
         const { data } = await supabase
@@ -30,9 +21,7 @@ export default function Calendar() {
         if (data) setPosts(data)
     }
 
-
     useEffect(() => {
-        // schedule async init off the current tick to avoid synchronous setState inside effect
         let cancelled = false
         const init = async () => {
             const { data } = await supabase.auth.getUser()
@@ -45,8 +34,6 @@ export default function Calendar() {
         const t = setTimeout(init, 0)
         return () => { cancelled = true; clearTimeout(t) }
     }, [])
-
-
 
     const handleDelete = async (postId) => {
         setDeletingId(postId)
@@ -113,12 +100,26 @@ export default function Calendar() {
         .user-email { font-size: 12px; color: rgba(255,255,255,0.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .logout-btn { width: 100%; padding: 10px; background: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: rgba(255,255,255,0.35); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
         .logout-btn:hover { border-color: rgba(239,68,68,0.4); color: #fca5a5; background: rgba(239,68,68,0.06); }
+
+        /* Mobile topbar */
+        .mobile-topbar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #0a0a0f; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 0 20px; align-items: center; justify-content: space-between; z-index: 200; }
+        .mobile-brand { display: flex; align-items: center; gap: 8px; }
+        .mobile-brand-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #6c63ff, #f97316); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        .mobile-brand-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+
+        /* Bottom nav */
+        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: rgba(10,10,15,0.97); border-top: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); z-index: 200; padding: 0 8px; align-items: center; justify-content: space-around; }
+        .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 16px; border-radius: 10px; text-decoration: none; color: rgba(255,255,255,0.35); }
+        .bottom-nav-item.active { color: #6c63ff; }
+        .bottom-nav-icon { font-size: 20px; }
+        .bottom-nav-label { font-size: 10px; font-weight: 500; }
+
         .main { margin-left: 240px; padding: 40px 48px; opacity: 0; transform: translateY(16px); transition: opacity 0.5s, transform 0.5s; }
         .main.visible { opacity: 1; transform: translateY(0); }
         .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px; }
         .page-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
         .page-sub { font-size: 14px; color: rgba(255,255,255,0.35); }
-        .new-post-btn { display: flex; align-items: center; gap: 8px; padding: 12px 22px; background: linear-gradient(135deg, #6c63ff, #4f46e5); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; text-decoration: none; transition: opacity 0.2s, transform 0.15s; }
+        .new-post-btn { display: flex; align-items: center; gap: 8px; padding: 12px 22px; background: linear-gradient(135deg, #6c63ff, #4f46e5); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; text-decoration: none; transition: opacity 0.2s, transform 0.15s; white-space: nowrap; }
         .new-post-btn:hover { opacity: 0.85; transform: translateY(-1px); }
         .cal-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
         .cal-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; overflow: hidden; }
@@ -141,8 +142,6 @@ export default function Calendar() {
         .side-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 24px; position: sticky; top: 24px; }
         .side-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
         .side-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 20px; }
-
-        /* Post item with actions */
         .post-item { padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 10px; transition: border-color 0.15s; }
         .post-item:hover { border-color: rgba(255,255,255,0.12); }
         .post-item-time { font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
@@ -156,10 +155,8 @@ export default function Calendar() {
         .edit-btn:hover { background: rgba(108,99,255,0.25); }
         .delete-btn { background: rgba(239,68,68,0.1); color: #fca5a5; }
         .delete-btn:hover { background: rgba(239,68,68,0.2); }
-
-        /* Confirm dialog */
-        .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .confirm-box { background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 340px; text-align: center; }
+        .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 16px; }
+        .confirm-box { background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 100%; max-width: 340px; text-align: center; }
         .confirm-icon { font-size: 36px; margin-bottom: 12px; }
         .confirm-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
         .confirm-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.6; }
@@ -167,7 +164,6 @@ export default function Calendar() {
         .confirm-cancel { flex: 1; padding: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
         .confirm-delete { flex: 1; padding: 11px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); border-radius: 10px; color: #fca5a5; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
         .confirm-delete:hover { background: rgba(239,68,68,0.3); }
-
         .empty-day { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.25); }
         .empty-day .icon { font-size: 32px; margin-bottom: 10px; }
         .empty-day p { font-size: 13px; margin-bottom: 16px; }
@@ -184,9 +180,29 @@ export default function Calendar() {
         .upcoming-content { flex: 1; }
         .upcoming-text { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; margin-bottom: 4px; }
         .upcoming-meta { font-size: 11px; color: rgba(255,255,255,0.25); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+          .sidebar { display: none; }
+          .mobile-topbar { display: flex; }
+          .bottom-nav { display: flex; }
+          .main { margin-left: 0; padding: 76px 16px 80px; }
+          .page-title { font-size: 22px; }
+          .page-header { flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+          .cal-layout { grid-template-columns: 1fr; }
+          .side-card { display: none; }
+          .cal-header { padding: 16px 16px; }
+          .cal-month { font-size: 16px; }
+          .cal-weekday { font-size: 9px; padding: 8px 2px; letter-spacing: 0; }
+          .cal-cell { min-height: 52px; padding: 4px; }
+          .cal-day { font-size: 11px; width: 22px; height: 22px; margin-bottom: 3px; }
+          .post-dot { font-size: 8px; padding: 2px 3px; }
+          .cal-grid { padding: 4px; gap: 2px; }
+          .upcoming-card { border-radius: 14px; padding: 16px; }
+          .legend { gap: 10px; }
+        }
       `}</style>
 
-            {/* Confirm Delete Dialog */}
             {confirmDelete && (
                 <div className="confirm-overlay">
                     <div className="confirm-box">
@@ -198,11 +214,7 @@ export default function Calendar() {
                         </div>
                         <div className="confirm-actions">
                             <button className="confirm-cancel" onClick={() => setConfirmDelete(null)}>Cancel</button>
-                            <button
-                                className="confirm-delete"
-                                onClick={() => handleDelete(confirmDelete.id)}
-                                disabled={deletingId === confirmDelete.id}
-                            >
+                            <button className="confirm-delete" onClick={() => handleDelete(confirmDelete.id)} disabled={deletingId === confirmDelete.id}>
                                 {deletingId === confirmDelete.id ? 'Deleting...' : 'Yes, Delete'}
                             </button>
                         </div>
@@ -211,6 +223,7 @@ export default function Calendar() {
             )}
 
             <div className="root">
+                {/* Desktop Sidebar */}
                 <aside className="sidebar">
                     <div className="brand">
                         <div className="brand-icon">📅</div>
@@ -231,7 +244,16 @@ export default function Calendar() {
                     </div>
                 </aside>
 
-                <main className={`main visible`}>
+                {/* Mobile Topbar */}
+                <div className="mobile-topbar">
+                    <div className="mobile-brand">
+                        <div className="mobile-brand-icon">📅</div>
+                        <span className="mobile-brand-name">PostPilot</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Calendar</div>
+                </div>
+
+                <main className="main visible">
                     <div className="page-header">
                         <div>
                             <h1 className="page-title">Calendar</h1>
@@ -260,8 +282,7 @@ export default function Calendar() {
                                     {cells.map((cell, i) => {
                                         const dayPosts = cell.current ? getPostsForDay(cell.day) : []
                                         return (
-                                            <div
-                                                key={i}
+                                            <div key={i}
                                                 className={`cal-cell ${!cell.current ? 'other-month' : ''} ${selectedDay === cell.day && cell.current ? 'selected' : ''}`}
                                                 onClick={() => cell.current && setSelectedDay(selectedDay === cell.day ? null : cell.day)}
                                             >
@@ -315,7 +336,7 @@ export default function Calendar() {
                             )}
                         </div>
 
-                        {/* Side panel */}
+                        {/* Side panel — desktop only, hidden on mobile */}
                         <div className="side-card">
                             {selectedDay ? (
                                 <>
@@ -354,6 +375,26 @@ export default function Calendar() {
                         </div>
                     </div>
                 </main>
+
+                {/* Mobile Bottom Nav */}
+                <nav className="bottom-nav">
+                    <Link href="/dashboard" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">🏠</span>
+                        <span className="bottom-nav-label">Home</span>
+                    </Link>
+                    <Link href="/compose" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">✏️</span>
+                        <span className="bottom-nav-label">Create</span>
+                    </Link>
+                    <Link href="/calendar" className="bottom-nav-item active">
+                        <span className="bottom-nav-icon">📆</span>
+                        <span className="bottom-nav-label">Calendar</span>
+                    </Link>
+                    <Link href="/dashboard" className="bottom-nav-item">
+                        <span className="bottom-nav-icon">🔗</span>
+                        <span className="bottom-nav-label">Connect</span>
+                    </Link>
+                </nav>
             </div>
         </>
     )
